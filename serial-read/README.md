@@ -1,5 +1,7 @@
 # serial-read
 
+*🇺🇸 [Read in English](README_en.md)*
+
 Script Python para capturar dados do MPU6050 via porta serial (USB) e salvá-los em CSV.
 
 ## Visão geral
