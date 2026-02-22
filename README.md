@@ -1,5 +1,7 @@
 # ESP32 + MPU6050 — Estudo para Sistema Inercial
 
+*🇺🇸 [Read in English](README_en.md)*
+
 Projeto de estudo do sensor inercial MPU6050 com ESP32, voltado à compreensão do seu funcionamento e à coleta de dados para futura implementação em um **sistema de navegação inercial (INS)**.
 
 ## Objetivo

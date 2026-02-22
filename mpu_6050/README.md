@@ -3,6 +3,8 @@
 
 # MPU6050 — 200 Hz com FreeRTOS dual-core
 
+*🇺🇸 [Read in English](README_en.md)*
+
 ## Overview
 
 Este exemplo demonstra a leitura do sensor inercial MPU6050 a **200 Hz** usando a API de I2C master do ESP-IDF, com uma arquitetura produtora/consumidora entre os dois núcleos do ESP32:
