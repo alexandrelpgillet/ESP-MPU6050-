@@ -42,10 +42,25 @@ def main():
             f.flush()
 
             ts, ax, ay, az, gx, gy, gz, temp, drop = fields
-            print(f"[{int(ts)/1e6:10.3f}s] "
-                  f"A: {float(ax):+.3f} {float(ay):+.3f} {float(az):+.3f} g | "
-                  f"G: {float(gx):+.3f} {float(gy):+.3f} {float(gz):+.3f} °/s | "
-                  f"{float(temp):.1f}°C drop={drop}")
+            try:
+                
+                ts_sec = int(ts) / 1e6
+                ax_val = float(ax)
+                ay_val = float(ay)
+                az_val = float(az)
+                gx_val = float(gx)
+                gy_val = float(gy)
+                gz_val = float(gz)
+                temp_val = float(temp)
+                
+                print(f"[{ts_sec:10.3f}s] "
+                      f"A: {ax_val:+.3f} {ay_val:+.3f} {az_val:+.3f} g | "
+                      f"G: {gx_val:+.3f} {gy_val:+.3f} {gz_val:+.3f} °/s | "
+                      f"{temp_val:.1f}°C drop={drop}")
+            
+            except ValueError as e:
+                print(f"[ERRO] Linha inválida: {line} ({e})")
+                continue
 
 if __name__ == "__main__":
     try:
