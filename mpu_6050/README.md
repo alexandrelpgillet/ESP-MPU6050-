@@ -1,51 +1,80 @@
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-H21 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | --------- | -------- | -------- | -------- |
 
-# Basic I2C Master Example
-
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+# MPU6050 — 200 Hz com FreeRTOS dual-core
 
 ## Overview
 
-This example demonstrates basic usage of I2C driver by reading and writing from a I2C connected sensor:
+Este exemplo demonstra a leitura do sensor inercial MPU6050 a **200 Hz** usando a API de I2C master do ESP-IDF, com uma arquitetura produtora/consumidora entre os dois núcleos do ESP32:
 
-If you have a new I2C application to go (for example, read the temperature data from external sensor with I2C interface), try this as a basic template, then add your own code.
+- **Core 0 — tarefa produtora:** lê os registradores do MPU6050 a cada 5 ms (200 Hz), disparada por um `esp_timer` periódico via semáforo binário, e empurra cada amostra numa fila FreeRTOS.
+- **Core 1 — tarefa consumidora:** retira amostras da fila e as envia em formato CSV pela UART0 (USB-Serial).
 
-## How to use example
+### Saída CSV
 
-### Hardware Required
+```
+timestamp_us,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps,temp_c,dropped
+```
 
-To run this example, you should have an Espressif development board based on a chip listed in supported targets as well as a MPU9250. MPU9250 is a inertial measurement unit, which contains a accelerometer, gyroscope as well as a magnetometer, for more information about it, you can read the [datasheet of the MPU9250 sensor](https://invensense.tdk.com/wp-content/uploads/2015/02/PS-MPU-9250A-01-v1.1.pdf).
+| Campo | Descrição |
+|-------|-----------|
+| `timestamp_us` | Timestamp em microssegundos (`esp_timer_get_time()`) |
+| `ax_g / ay_g / az_g` | Aceleração nos eixos X, Y, Z em **g** (fundo de escala ±2 g) |
+| `gx_dps / gy_dps / gz_dps` | Velocidade angular em **°/s** (fundo de escala ±250 °/s) |
+| `temp_c` | Temperatura interna do sensor em **°C** |
+| `dropped` | Amostras descartadas acumuladas (fila cheia) |
 
-#### Pin Assignment
+## Hardware Required
 
-**Note:** The following pin assignments are used by default, you can change these in the `menuconfig` .
+- Placa de desenvolvimento Espressif com ESP32 (dual-core)
+- Sensor MPU6050 conectado via I2C
 
-|                  | SDA             | SCL           |
-| ---------------- | -------------- | -------------- |
-| ESP I2C Master   | I2C_MASTER_SDA | I2C_MASTER_SCL |
-| MPU9250 Sensor   | SDA            | SCL            |
+### Pin Assignment
 
-For the actual default value of `I2C_MASTER_SDA` and `I2C_MASTER_SCL` see `Example Configuration` in `menuconfig`.
+![Diagram_EP32_MPU6050](docs/img/esp-mpu-diagram.svg)
 
-**Note:** There's no need to add an external pull-up resistors for SDA/SCL pin, because the driver will enable the internal pull-up resistors.
+| | SDA | SCL |
+|---|---|---|
+| ESP32 I2C Master | `I2C_MASTER_SDA` | `I2C_MASTER_SCL` |
+| MPU6050 | SDA | SCL |
 
-### Build and Flash
+Os valores padrão de `I2C_MASTER_SDA`, `I2C_MASTER_SCL` e `I2C_MASTER_FREQUENCY` são configuráveis via `menuconfig` → **Example Configuration**.
 
-Enter `idf.py -p PORT flash monitor` to build, flash and monitor the project.
+> **Nota:** Pull-ups externos não são necessários — o driver habilita os pull-ups internos do ESP32.
 
-(To exit the serial monitor, type ``Ctrl-]``.)
+## Configuração do MPU6050
 
-See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
+| Parâmetro | Valor | Registrador |
+|-----------|-------|-------------|
+| Taxa de amostragem | 200 Hz | `SMPLRT_DIV = 0x04` |
+| DLPF | 188 Hz BW (1 kHz output rate) | `CONFIG = 0x01` |
+| Fundo de escala Accel | ±2 g → 16384 LSB/g | `ACCEL_CONFIG = 0x00` |
+| Fundo de escala Gyro | ±250 °/s → 131 LSB/(°/s) | `GYRO_CONFIG = 0x00` |
+
+## Build and Flash
+
+```bash
+idf.py -p PORT flash monitor
+```
+
+(Para sair do monitor serial, pressione `Ctrl-]`.)
+
+Consulte o [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) para os passos completos de configuração do ESP-IDF.
 
 ## Example Output
 
-```bash
-I (328) example: I2C initialized successfully
-I (338) example: WHO_AM_I = 71
-I (338) example: I2C de-initialized successfully
+```
+I (328) mpu6050: WHO_AM_I = 0x68 (esperado 0x68)
+I (428) mpu6050: MPU6050 configurado a 200 Hz
+I (428) mpu6050: Timer 200 Hz iniciado
+timestamp_us,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps,temp_c,dropped
+428312,0.0012,-0.0034,1.0021,0.0153,-0.0076,0.0023,28.45,0
+433318,0.0011,-0.0035,1.0019,0.0153,-0.0076,0.0023,28.45,0
+...
 ```
 
 ## Troubleshooting
 
-(For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you as soon as possible.)
+- **WHO_AM_I diferente de 0x68:** verifique a fiação SDA/SCL e o endereço I2C (pino AD0 em nível baixo = `0x68`, nível alto = `0x69`).
+- **`dropped` crescente:** a tarefa consumidora não consegue esvaziar a fila a tempo — aumente o tamanho da fila (`FIFO_SIZE`) ou reduza a taxa de amostragem.
+- **Leituras falhando:** verifique a alimentação do sensor (3,3 V) e a frequência I2C configurada em `menuconfig`.
