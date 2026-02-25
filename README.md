@@ -116,6 +116,50 @@ Consulte [serial-read/README.md](serial-read/README.md) para ajustar porta seria
 | 3,3 V | VCC |
 | GND | GND |
 
+
+
+## Caracterização do viés de erro do MPU5050 no estado estático
+
+
+
+
+### Média 
+
+|AcX|AcY|AcZ|
+|---|---|---|
+|-0.04574351853562127|-0.010799607491826594 |-0.03767737582888491|  
+
+|GyrX|GyrY|GyrZ|
+|----|----|----|
+|-1.7234902704150432|0.06561444337723268|-1.196246905188496|
+
+### Desvio padrão
+
+|AcX|AcY|AcZ|
+|---|---|---|
+|0.0030293403270227038|0.0027005578449914827|0.004056420969595663|   
+
+|GyrX|GyrY|GyrZ|
+|----|----|----|
+|0.062477260640924945|0.05919906720942323|0.05011258233701453|
+
+
+
+
+### Aplicando correção a partir das médias
+
+
+|Sem fator de correção| Com fator de correção |
+|---------------------|-----------------------|
+|![](./analyse_data/img/ax_g.png)|![](./analyse_data/img/ax_g_fixed.png)|
+|![](./analyse_data/img/ay_g.png)|![](./analyse_data/img/ay_g_fixed.png)|
+|![](./analyse_data/img/az_g.png)|![](./analyse_data/img/az_g_fixed.png)|
+|![](./analyse_data/img/gx_dps.png)|![](./analyse_data/img/gx_dps_fixed.png)|
+|![](./analyse_data/img/gy_dps.png)|![](./analyse_data/img/gy_dps_fixed.png)|
+|![](./analyse_data/img/gz_dps.png)|![](./analyse_data/img/gz_dps_fixed.png)|
+
+
+
 > Pull-ups externos não são necessários — o driver habilita os pull-ups internos do ESP32.
 
 ## Próximos passos (rumo ao INS)
